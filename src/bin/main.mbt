@@ -89,7 +89,8 @@ fn CompileStatus::step(self : CompileStatus) -> Bool {
   match self.curr_stage {
     Parse => {
       let source_code = self.source_code.unwrap()
-      let parsed = @util.die("TODO: parse")
+      @io.println("ready to call parser")
+      let parsed = @parser.parse(source_code)
       self.ast = Some(parsed)
     }
     Typecheck => {

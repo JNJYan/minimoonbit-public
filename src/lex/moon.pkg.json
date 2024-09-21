@@ -1,1 +1,9 @@
-{}
+{
+    "import": [
+        {
+            "path": "moonbitlang/minimbt",
+            "alias": "types"
+        },
+        "lijunchen/unstable_io/io"
+    ]
+}
