@@ -4,13 +4,23 @@ pub struct Context {
   array : Array[Token]
 }
 
-fn skip_white_space(context: Context) -> Unit {
-    let { offset, str, array } = context
+fn is_whitespace(ch : Char) -> Bool {
+  ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r'
+}
 
-    while ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
-        self.read_char();
-        ch = self.ch as char;
-    }
+fn eat_whitespace(content: Context) -> Unit {
+  eat_while(content, is_whitespace)
+}
+
+fn eat_while(context: Context, predicate : (Char) -> Bool) -> Unit {
+  let { offset, str, .. } = context
+  if offset >= str.length() {
+    return
+  }
+  if predicate(str[offset]) {
+    context.offset += 1
+    eat_while(context, predicate)
+  }
 }
 
 pub fn lex(context : Context) -> Unit {
@@ -53,31 +63,61 @@ pub fn lex(context : Context) -> Unit {
       context.offset += 1
       lex(context)
     }
-    ch => if ch >= '0' && ch <= '9' { lex_number(context) } else if ch >= 'z' {}
-
+    '=' => {
+      array.push(Assign)
+      context.offset += 1
+      lex(context)
+    }
+    // 暂时不处理_开始的变量
+    '_' => {
+      context.offset += 1
+      @io.println("error char _")
+      panic()
+    }
+    ch => if ch >= '0' && ch <= '9' {
+      lex_number(context)
+    } else if ch <= 'z' && ch >= 'a' {
+      lex_word(context)
+    } else {
+      @io.println("error char _\{ch}")
+      panic()
+      // 
+    }
   }
 }
 
-fn lex_alpha(context : Context) -> Unit {
+fn lex_word(context : Context) -> Unit {
   let { offset, str, .. } = context
   let number = "\{str[offset]}"
   context.offset += 1
-  lex_alpha_rest(context, number)
+  lex_word_rest(context, number)
 }
 
-fn lex_alpha_rest(context : Context, number : String) -> Unit {
+fn lex_word_rest(context : Context, number : String) -> Unit {
   let { offset, str, array } = context
   if offset >= str.length() {
     array.push(Number(@strconv.parse_int?(number).unwrap()))
     return
   }
-  let ch = str[offset]
-  if ch >= '0' && ch <= '9' {
-    context.offset += 1
-    lex_number_rest(context, number + ch.to_string())
-  } else {
-    array.push(Number(@strconv.parse_int?(number).unwrap()))
-    lex(context)
+  match str[offset] {
+    ch => if ch == '_' || ch >= '0' && ch <= '9' || ch <= 'z' && ch <= 'a' || ch <= 'A' && ch <= 'Z' {
+      context.offset += 1
+      lex_word_rest(context, number + ch.to_string())
+    } else {
+      let mut token: Token = Null
+      if is_keyword(number, token) {
+
+      }
+      array.push(Number(@strconv.parse_int?(number).unwrap()))
+      lex(context)
+    }
+  }
+}
+fn is_keyword(word : String) -> Token {
+  match word {
+    "let" => Let
+    "mut" => Mut
+    _ => false
   }
 }
 
@@ -114,14 +154,49 @@ test {
 }
 
 enum Token {
+  Null
   Number(Int)
-  LParen
-  RParen
-  Add
-  Sub
-  Mul
-  Div
-  Let
+  Word(String)
+  Add       // +
+  Sub       // -
+  Mul       // *
+  Div       // /
+  Assign    // =
+  LParen    // (
+  RParen    // )
+  LBracket  // [
+  RBracket  // ]
+  LBrace    // {
+  RBrace    // }
+  Comma     // ,
+  Semicolon // ;
+  Colon     // :
+  Lt        // <
+  Gt        // >
+  Eq        // ==
+  Neq       // !=
+  Lte       // <=
+  Gte       // >=
+  Bang      // !
+  Dot       // .
+  And       // &&
+  Or        // ||
+  // keyword
+  Let       // let
+  Mut       // mut
+  If        // if
+  Else      // else
+  While     // while
+  For       // for
+  In        // in
+  Break     // break
+  Continue  // continue
+  Return    // return
+  True      // true
+  False     // false
+  Function  // fn
+  Public    // pub
+  White     // white
 } derive(Show)
 
 enum Expression {
